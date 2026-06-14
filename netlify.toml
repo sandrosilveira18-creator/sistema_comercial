@@ -1,0 +1,24 @@
+# Configuração do Netlify — site Damião Academy
+#
+# O painel é servido por um ARQUIVO FÍSICO em /comercial/index.html,
+# então /comercial funciona nativamente, sem depender de redirect.
+# Esta regra é só um atalho opcional: /painel -> /comercial/
+
+[[redirects]]
+  from = "/painel"
+  to = "/comercial/"
+  status = 301
+
+# ─── Cache ───
+# HTML sempre revalidado: o navegador checa o servidor a cada acesso,
+# então uma versão nova publicada aparece sem precisar limpar cache.
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/comercial/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
