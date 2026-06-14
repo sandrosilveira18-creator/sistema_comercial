@@ -1,5 +1,10 @@
 # Configuração do Netlify — site Damião Academy
 #
+# Site estático (sem build): publica os arquivos da raiz do repositório.
+[build]
+  publish = "."
+  command = ""
+
 # O painel é servido por um ARQUIVO FÍSICO em /comercial/index.html,
 # então /comercial funciona nativamente, sem depender de redirect.
 # Esta regra é só um atalho opcional: /painel -> /comercial/
