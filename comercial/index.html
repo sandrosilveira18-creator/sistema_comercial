@@ -506,6 +506,15 @@
           <select class="inp" id="ml-programa"><option>Não</option><option>Sim</option></select>
         </div>
       </div>
+      <div class="campo-f"><label class="lbl">Como conheceu</label>
+        <select class="inp" id="ml-origem">
+          <option>Instagram</option>
+          <option>Indicação</option>
+          <option>Google</option>
+          <option>Facebook/Anúncio</option>
+          <option>Outro</option>
+        </select>
+      </div>
       <div class="campo-f"><label class="lbl">Score <small style="color:var(--tinta-3);font-weight:700">(auto se vazio)</small></label><input class="inp" id="ml-score" type="number" min="0" max="100" placeholder="Calculado pelas respostas"></div>
       <div class="modal-foot">
         <button class="btn-cta" type="submit" id="ml-salvar">Salvar lead</button>
@@ -779,7 +788,8 @@ function abrir(id){
     <div class="dr-body">
       <div class="campo-d"><span>WhatsApp</span><b><a href="https://wa.me/55${(l.whatsapp||'').replace(/\D/g,'')}" target="_blank">${esc(l.whatsapp||'—')}</a></b></div>
       <div class="campo-d"><span>Faturamento</span><b>${esc(l.faturamento||'—')}</b></div>
-      <div class="campo-d"><span>Maior desafio</span><b>${esc(l.desafio||'—')}</b></div>
+      <div class="campo-d"><span>Como conheceu</span><b>${esc(l.origem||'—')}</b></div>
+      <div class="campo-d"><span>Maiores desafios</span><b>${esc(l.desafio||'—')}</b></div>
       <div class="campo-d"><span>Entrou em</span><b>${tempoAtras(l.criado_em)}</b></div>
       ${l.fechado_por_nome?`<div class="campo-d"><span>Fechado por</span><b style="color:var(--ativo)">${esc(l.fechado_por_nome)}</b></div>`:""}
       ${l.fechado_em?`<div class="campo-d"><span>Fechado em</span><b>${new Date(l.fechado_em).toLocaleDateString("pt-BR")}</b></div>`:""}
@@ -870,6 +880,7 @@ function abrirModalLead(lead){
   document.getElementById("ml-status").value = lead?.status || "novo";
   document.getElementById("ml-desafio").value = lead?.desafio || "Falta de venda";
   document.getElementById("ml-programa").value = lead?.programa_aceleracao || "Não";
+  document.getElementById("ml-origem").value = lead?.origem || "Instagram";
   document.getElementById("ml-score").value = lead?.score ?? "";
   modalLead.classList.add("on");
   setTimeout(()=>document.getElementById("ml-nome").focus(),120);
@@ -890,6 +901,7 @@ document.getElementById("form-lead").addEventListener("submit", async e=>{
     status:document.getElementById("ml-status").value,
     desafio:document.getElementById("ml-desafio").value,
     programa_aceleracao:document.getElementById("ml-programa").value,
+    origem:document.getElementById("ml-origem").value,
   };
   const scoreManual=document.getElementById("ml-score").value;
   dados.score = scoreManual!=="" ? Math.max(0,Math.min(100,+scoreManual)) : calcularScore(dados);

@@ -25,7 +25,9 @@ gerencia num painel interno (Kanban). Voltado para lanchonetes/hamburguerias.
 | `supabase-setup.sql` | Schema (`leads`, `perfis`, `atividades`), índices, RLS, GRANTs e trigger de perfil automático. Idempotente. |
 | `logo.jpg` | Logo. **Deve ficar na mesma pasta** dos HTML (referenciado por `<img src="logo.jpg">`). |
 | `_redirects` | Netlify: `/comercial` e `/painel` → `painel-comercial.html` (status 200). |
-| `LEIA-ME-setup.md` | Guia de instalação para o cliente (SQL, criar usuário, testar). |
+| `LEIA-ME-setup.md` | Guia de instalação para o cliente (SQL, criar usuário, testar, notificação WhatsApp). |
+| `supabase/functions/notificar-lead/index.ts` | Edge Function chamada por um gatilho de banco (INSERT em `leads`). Envia notificação de texto via WhatsApp (API gratuita do **CallMeBot**) para o dono do negócio a cada lead novo. Segredos (`CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY`, `WEBHOOK_SECRET`) ficam só no Supabase (`supabase secrets set`), nunca no código. |
+| `supabase-webhook-whatsapp.sql` | Cria a extensão `pg_net` e o gatilho `AFTER INSERT ON leads` que chama a Edge Function `notificar-lead` via `net.http_post`. Precisa editar `<PROJECT_REF>` e `<WEBHOOK_SECRET>` antes de rodar. Roda no SQL Editor, depois do deploy da função. |
 
 ## Credenciais Supabase
 
@@ -53,8 +55,20 @@ os dados é o RLS + GRANTs.
 ## Cálculo de score (mantém index.html e painel em sincronia)
 
 Base **50**; faturamento "Acima de R$ 80 mil" +25, "R$ 30 mil a R$ 80 mil" +15,
-"R$ 10 mil a R$ 30 mil" +8; desafio venda +15, lucro +12, pessoas qualificadas
-+10, pessoas +8, tempo +5; já fez mentoria −5. Limitado a [10, 100].
+"R$ 10 mil a R$ 30 mil" +8; já fez mentoria −5. Limitado a [10, 100].
+
+`desafio` é **multi-seleção** no formulário público (vários valores separados por
+`", "` num único campo TEXT, ex.: `"Falta de venda, Falta de tempo"`). O score
+soma os pontos de **cada** desafio marcado: venda +15, lucro +12, pessoas
+qualificadas +10, pessoas +8, tempo +5. No painel (`comercial/index.html`), a
+criação/edição manual de lead ainda usa um `<select>` de desafio único, e a
+função `calcularScore` de lá compara `d.desafio` com um valor só (não soma
+múltiplos) — está OK porque esse formulário manual nunca produz mais de um
+desafio. Se algum dia o `<select>` virar multi-escolha, essa função precisa
+ser ajustada para somar como o `index.html` faz.
+
+`origem` (Instagram, Indicação, Google, Facebook/Anúncio, Outro) é só
+informativo — não entra no cálculo do score.
 
 ## Deploy
 

@@ -29,6 +29,10 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS fechado_por      UUID REFERENCES auth
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS fechado_por_nome TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS fechado_em       TIMESTAMPTZ;
 
+-- origem do lead (Instagram, Indicação, Google etc.) — captada no formulário público
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS origem TEXT;
+-- nota: "desafio" agora pode conter múltiplos valores separados por ", " (ex.: "Falta de venda, Falta de tempo")
+
 -- ───────────────────────────────────────────────
 -- 2. Perfis de usuário (nome + papel)
 -- ───────────────────────────────────────────────
