@@ -31,16 +31,24 @@ gerencia num painel interno (Kanban). Voltado para lanchonetes/hamburguerias.
 
 ## Credenciais Supabase
 
-No topo do `<script>` de `index.html` e `painel-comercial.html`, **sempre neste padrão**:
+No topo do `<script>` de `index.html` e `comercial/index.html`, **sempre neste padrão**:
 
 ```js
-const SUPABASE_URL = "https://<ref>.supabase.co";   // a URL
-const SUPABASE_KEY = "eyJ...";                        // a ANON key (JWT)
+const SUPABASE_URL = "https://<ref>.supabase.co";          // a URL
+const SUPABASE_KEY = "sb_publishable_...";                  // a publishable key
 ```
 
-⚠️ **Nunca inverter URL e KEY** (já foi um bug). ⚠️ Usar **apenas a anon key**
-(pública) — nunca a `service_role` em arquivo que vai pro navegador. Quem protege
-os dados é o RLS + GRANTs.
+⚠️ **Nunca inverter URL e KEY** (já foi um bug). ⚠️ Usar **apenas a chave
+pública** (`anon` legada ou, no projeto atual, a **publishable key**) — nunca a
+`service_role`/`secret` em arquivo que vai pro navegador. Quem protege os dados
+é o RLS + GRANTs.
+
+> Esse projeto já migrou para o **novo sistema de chaves da Supabase**
+> (`sb_publishable_...` / `sb_secret_...`) porque as **chaves legadas (JWT
+> `anon`/`service_role`) foram desativadas** no painel do projeto — se elas
+> forem reativadas um dia, a JWT antiga volta a funcionar, mas o padrão atual
+> é a publishable key. Para ver as chaves do projeto: `supabase projects
+> api-keys --project-ref <ref>`.
 
 ## Banco de dados
 
