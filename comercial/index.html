@@ -49,7 +49,7 @@
   .orbe.o2{width:360px;height:360px;background:#ffd6c4;bottom:-140px;left:-100px;animation-delay:-6s}
   .orbe.o3{width:300px;height:300px;background:#fff0cc;top:40%;left:55%;animation-delay:-11s}
   @keyframes flutua{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.08)}}
-  body>*:not(.orbes){position:relative;z-index:1}
+  body>*:not(.orbes):not(.drawer):not(.overlay):not(.toast):not(.modal-bg){position:relative;z-index:1}
 
   /* ─── login ─── */
   .login-wrap{min-height:100vh;display:grid;place-items:center;padding:24px}
@@ -309,6 +309,13 @@
     .usuario .info{display:none}
   }
 
+  /* ─── alternância primeiro contato / recuperação na aba Ligações ─── */
+  .contexto-toggle{display:flex;gap:8px;padding:10px 0 0}
+  .contexto-btn{border:1.5px solid var(--linha);background:var(--surface);border-radius:99px;padding:9px 16px;
+    font-family:inherit;font-weight:800;font-size:12.5px;color:var(--tinta-2);cursor:pointer;transition:.18s}
+  .contexto-btn:hover{background:var(--bg-alt)}
+  .contexto-btn.on{background:var(--trigo);border-color:var(--trigo);color:#fff}
+
   /* ─── recuperação (motivo/cor) ─── */
   .selo-motivo{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;
     padding:5px 10px;border-radius:7px;background:var(--bg,#f3f4f6);color:var(--c,#6b7280)}
@@ -476,6 +483,10 @@
       <div class="card-graf" style="margin-bottom:16px">
         <h3>Registrar ligação</h3>
         <p class="sub3">SDR · resultado do contato</p>
+        <div class="contexto-toggle">
+          <button type="button" class="contexto-btn on" data-contexto="primeiro">Primeiro contato</button>
+          <button type="button" class="contexto-btn" data-contexto="recuperacao">Recuperação</button>
+        </div>
         <form id="form-ligacao" style="margin-top:14px">
           <div class="campo-f">
             <label class="lbl">Lead</label>
@@ -483,16 +494,7 @@
           </div>
           <div class="campo-f">
             <label class="lbl">Resultado</label>
-            <select class="inp" id="lig-resultado" required>
-              <option value="Atendeu">Atendeu</option>
-              <option value="Não atendeu">Não atendeu</option>
-              <option value="Número errado">Número errado</option>
-              <option value="Converteu em reunião">Converteu em reunião</option>
-              <option value="Não compareceu à reunião">Não compareceu à reunião</option>
-              <option value="Pediu para retornar depois">Pediu para retornar depois</option>
-              <option value="Parou de responder">Parou de responder</option>
-              <option value="Sem interesse">Sem interesse</option>
-            </select>
+            <select class="inp" id="lig-resultado" required></select>
           </div>
           <div class="campo-f">
             <label class="lbl">Observação (opcional)</label>
@@ -728,6 +730,7 @@ let graficos = {};
 let alvoExclusao = null;
 let leadParaMotivo = null;     // id do lead aguardando escolha de motivo de recuperação
 let agendamento = { leadId:null, slot:null, executivoId:null }; // estado do modal de agendar reunião
+let ligContexto = "primeiro"; // "primeiro" ou "recuperacao" — aba Ligações
 
 /* ─────────── helpers ─────────── */
 function prioridade(score){
@@ -1246,16 +1249,47 @@ function graficoOpts(linha){
 }
 
 /* ─────────── LIGAÇÕES / ATIVIDADES ─────────── */
+const RESULTADOS_POR_CONTEXTO = {
+  primeiro:    ["Não atendeu","Número errado","Converteu em reunião"],
+  recuperacao: ["Não atendeu","Converteu em reunião","Não compareceu à reunião","Pediu para retornar depois","Parou de responder","Sem interesse"],
+};
+function leadsParaContato(contexto){
+  const base = contexto==="primeiro"
+    ? leads.filter(l=>l.status==="novo"||l.status==="contato")
+    : leads.filter(l=>l.status==="recuperacao");
+  return [...base].sort((a,b)=>(a.nome||"").localeCompare(b.nome||""));
+}
+function atualizarFormLigacao(){
+  const ligLead=document.getElementById("lig-lead");
+  const v1=ligLead.value;
+  const lista=leadsParaContato(ligContexto);
+  ligLead.innerHTML = lista.length
+    ? lista.map(l=>`<option value="${l.id}">${esc(l.nome)} — ${esc(l.empresa||"")}</option>`).join("")
+    : `<option value="">Nenhum lead nessa situação agora</option>`;
+  if(lista.some(l=>String(l.id)===v1)) ligLead.value=v1;
+
+  const ligResultado=document.getElementById("lig-resultado");
+  const v2=ligResultado.value;
+  const opcoes=RESULTADOS_POR_CONTEXTO[ligContexto];
+  ligResultado.innerHTML = opcoes.map(r=>`<option value="${r}">${r}</option>`).join("");
+  if(opcoes.includes(v2)) ligResultado.value=v2;
+}
+document.querySelectorAll("[data-contexto]").forEach(b=>b.addEventListener("click",()=>{
+  ligContexto=b.dataset.contexto;
+  document.querySelectorAll("[data-contexto]").forEach(x=>x.classList.toggle("on",x===b));
+  atualizarFormLigacao();
+}));
+
 function renderLigacoes(){
-  // selects de lead
-  const opts=`<option value="">Selecione um lead…</option>`+
+  atualizarFormLigacao();
+
+  // histórico continua mostrando todos os leads, independente do contexto
+  const histLead=document.getElementById("hist-lead");
+  const v2=histLead.value;
+  histLead.innerHTML = `<option value="">Selecione um lead…</option>` +
     [...leads].sort((a,b)=>(a.nome||"").localeCompare(b.nome||""))
       .map(l=>`<option value="${l.id}">${esc(l.nome)} — ${esc(l.empresa||"")}</option>`).join("");
-  const ligLead=document.getElementById("lig-lead");
-  const histLead=document.getElementById("hist-lead");
-  const v1=ligLead.value, v2=histLead.value;
-  ligLead.innerHTML=opts; histLead.innerHTML=opts;
-  ligLead.value=v1; histLead.value=v2;
+  histLead.value=v2;
 
   // performance por SDR
   const ligs=atividades.filter(a=>a.tipo==="ligacao");

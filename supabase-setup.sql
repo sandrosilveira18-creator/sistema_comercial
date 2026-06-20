@@ -199,6 +199,26 @@ CREATE POLICY "usuario gerencia propria integracao"
   ON integracoes_executivo FOR ALL TO authenticated
   USING (auth.uid() = usuario_id) WITH CHECK (auth.uid() = usuario_id);
 
+-- ── GRANTs das tabelas novas ──────────────────────
+-- RLS sozinho não basta: sem GRANT, qualquer acesso (até o do service_role
+-- nas Edge Functions) dá "42501 permission denied for table".
+GRANT SELECT, INSERT, UPDATE ON reunioes TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE reunioes_id_seq TO authenticated;
+GRANT ALL ON reunioes TO service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON integracoes_executivo TO authenticated;
+GRANT ALL ON integracoes_executivo TO service_role;
+
+-- as Edge Functions (google-oauth-callback, criar-reuniao-meet, gerenciar-reuniao)
+-- usam a service_role key pra ler/gravar leads, atividades e perfis também —
+-- sem isso, dá o mesmo "42501 permission denied" só que mais difícil de notar
+-- (o erro é só logado, não interrompe o fluxo principal da função).
+GRANT ALL ON perfis TO service_role;
+GRANT ALL ON leads TO service_role;
+GRANT ALL ON atividades TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE leads_id_seq TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE atividades_id_seq TO service_role;
+
 -- =====================================================================
 --  5. (Opcional) Trigger para criar perfil automático ao criar usuário
 --     Cria um perfil com papel 'sdr' e nome a partir do e-mail.

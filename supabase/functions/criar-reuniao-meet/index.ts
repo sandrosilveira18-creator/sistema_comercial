@@ -165,7 +165,9 @@ Deno.serve(async (req) => {
       observacao: `Com ${executivo_nome ?? "executivo"} em ${dataFormatada} — Meet: ${meetLink}`,
     });
 
-    if (lead.status === "contato" || lead.status === "novo") {
+    // agendar reunião sempre avança o funil pra negociação, vindo de onde vier
+    // (primeiro contato, recuperação etc.) — só não rebaixa um lead já fechado.
+    if (lead.status !== "ativo" && lead.status !== "negociacao") {
       await sbAdmin.from("leads").update({ status: "negociacao" }).eq("id", lead_id);
     }
 
