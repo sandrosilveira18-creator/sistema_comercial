@@ -13,10 +13,18 @@ const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") ?? "";
 
 const sbAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// CORS: a função é chamada direto do navegador (sb.functions.invoke), então
+// precisa responder o preflight OPTIONS e mandar esses headers em toda resposta.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function json(corpo: unknown, status = 200) {
   return new Response(JSON.stringify(corpo), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 }
 
@@ -54,6 +62,7 @@ async function obterAccessTokenValido(executivoId: string) {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ erro: "Method not allowed" }, 405);
 
   let body: { reuniao_id?: number; acao?: string };
