@@ -308,6 +308,58 @@
     .busca{display:none}
     .usuario .info{display:none}
   }
+
+  /* ─── recuperação (motivo/cor) ─── */
+  .selo-motivo{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;
+    padding:5px 10px;border-radius:7px;background:var(--bg,#f3f4f6);color:var(--c,#6b7280)}
+  .selo-motivo .ponto{width:7px;height:7px;border-radius:50%;background:var(--c,#6b7280);flex:none}
+  .recup-tempos{font-size:11.5px;color:var(--tinta-3);margin-top:6px;display:flex;flex-direction:column;gap:2px}
+  .recup-lista{display:grid;gap:10px;padding:8px clamp(16px,3vw,32px) 40px}
+  .recup-item{background:var(--surface);border:1px solid var(--linha);border-radius:12px;padding:14px 16px;
+    box-shadow:var(--sombra);display:flex;align-items:center;gap:16px;flex-wrap:wrap;cursor:pointer}
+  .recup-item:hover{border-color:var(--recup)}
+  .recup-item .ri-nome{font-weight:800;font-size:14.5px;min-width:160px}
+  .recup-item .ri-emp{font-size:12.5px;color:var(--tinta-2)}
+  .recup-item .ri-tempos{margin-left:auto;text-align:right;font-size:11.5px;color:var(--tinta-3)}
+
+  /* ─── seletor de motivo (mini-modal) ─── */
+  .motivos-grid{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+  .motivo-btn{display:flex;align-items:center;gap:10px;border:1.5px solid var(--linha);background:var(--surface);
+    border-radius:11px;padding:11px 14px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13.5px;
+    color:var(--tinta);transition:.18s;text-align:left}
+  .motivo-btn:hover{border-color:var(--c);background:var(--bg)}
+  .motivo-btn .ponto{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+
+  /* ─── agenda do executivo ─── */
+  .agenda-topo{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:8px clamp(16px,3vw,32px) 4px}
+  .agenda-topo .campo-f{margin:0;min-width:220px}
+  .agenda-grid{display:flex;gap:10px;overflow-x:auto;padding:14px clamp(16px,3vw,32px) 6px}
+  .ag-dia{min-width:118px;display:flex;flex-direction:column;gap:6px;flex:none}
+  .ag-dia .ag-dia-tit{font-size:11.5px;font-weight:800;text-align:center;color:var(--tinta-2);
+    text-transform:uppercase;letter-spacing:.04em;padding-bottom:4px;border-bottom:1px solid var(--linha)}
+  .ag-slot{border:1.5px solid var(--linha);background:var(--surface);border-radius:9px;padding:9px 6px;
+    font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer;color:var(--tinta-2);transition:.15s;text-align:center}
+  .ag-slot:hover{border-color:var(--trigo);background:var(--bg-alt)}
+  .ag-slot.ocupado{background:#f3f4f6;color:var(--tinta-3);border-style:dashed;cursor:not-allowed}
+  .ag-slot.ocupado:hover{border-color:var(--linha);background:#f3f4f6}
+  .ag-slot.sel{background:var(--trigo);border-color:var(--trigo);color:#fff}
+
+  .reunioes-lista{padding:8px clamp(16px,3vw,32px) 40px;display:grid;gap:10px}
+  .reuniao-card{background:var(--surface);border:1px solid var(--linha);border-radius:12px;padding:14px 16px;
+    box-shadow:var(--sombra);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .reuniao-card .rc-info{flex:1;min-width:180px}
+  .reuniao-card .rc-info b{font-size:14px}
+  .reuniao-card .rc-info .rc-meta{font-size:12px;color:var(--tinta-3);margin-top:2px}
+  .reuniao-card .rc-acoes{display:flex;gap:6px;flex-wrap:wrap}
+  .btn-mini{border:1.5px solid var(--linha);background:var(--surface);border-radius:8px;padding:7px 11px;
+    font-family:inherit;font-weight:800;font-size:11.5px;cursor:pointer;color:var(--tinta-2);transition:.15s}
+  .btn-mini:hover{background:var(--bg-alt)}
+  .btn-mini.ok{color:var(--ativo);border-color:#bfe8c9}
+  .btn-mini.alerta{color:var(--erro);border-color:#f3d0c4}
+
+  .config-exec{margin:0 clamp(16px,3vw,32px) 18px}
+  .conectado-tag{display:inline-flex;align-items:center;gap:6px;color:var(--ativo);font-weight:800;font-size:12.5px}
+  .desconectado-tag{display:inline-flex;align-items:center;gap:6px;color:var(--erro);font-weight:800;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -370,6 +422,12 @@
   <button class="aba" data-aba="ligacoes">
     <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg> Ligações
   </button>
+  <button class="aba" data-aba="recuperacao">
+    <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg> Recuperação
+  </button>
+  <button class="aba" data-aba="agenda">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Agenda
+  </button>
 </nav>
 
 <!-- ─── ABA KANBAN ─── -->
@@ -430,6 +488,10 @@
               <option value="Não atendeu">Não atendeu</option>
               <option value="Número errado">Número errado</option>
               <option value="Converteu em reunião">Converteu em reunião</option>
+              <option value="Não compareceu à reunião">Não compareceu à reunião</option>
+              <option value="Pediu para retornar depois">Pediu para retornar depois</option>
+              <option value="Parou de responder">Parou de responder</option>
+              <option value="Sem interesse">Sem interesse</option>
             </select>
           </div>
           <div class="campo-f">
@@ -450,6 +512,42 @@
       <div class="timeline" id="hist-timeline"><div class="ativ-vazio">Selecione um lead para ver a linha do tempo.</div></div>
     </div>
   </div>
+</section>
+
+<!-- ─── ABA RECUPERAÇÃO ─── -->
+<section class="painel" id="painel-recuperacao">
+  <div class="kpis">
+    <div class="kpi" style="--c:var(--recup)"><div class="rot" style="color:var(--recup)">Em recuperação</div><div class="val" id="rec-total">0</div><div class="sub2">leads no funil de retomada</div></div>
+  </div>
+  <div class="recup-lista" id="recup-lista"></div>
+</section>
+
+<!-- ─── ABA AGENDA ─── -->
+<section class="painel" id="painel-agenda">
+  <div class="card-graf config-exec" id="config-exec" style="display:none">
+    <h3>Minha conta · WhatsApp e Google Agenda</h3>
+    <p class="sub3">Usado para te avisar e criar o Meet quando o SDR marcar uma reunião</p>
+    <div class="dois">
+      <div class="campo-f"><label class="lbl">WhatsApp (com DDI)</label><input class="inp" id="cfg-whatsapp" placeholder="5511999999999"></div>
+      <div class="campo-f"><label class="lbl">Apikey do CallMeBot</label><input class="inp" id="cfg-apikey" placeholder="Apikey recebida do CallMeBot"></div>
+    </div>
+    <div class="modal-foot" style="margin-top:4px">
+      <button class="btn-cta" type="button" id="cfg-salvar" style="flex:1">Salvar</button>
+      <button class="btn-sec" type="button" id="cfg-conectar-google" style="flex:1.4">Conectar Google Agenda</button>
+    </div>
+    <div style="margin-top:10px" id="cfg-status-google"></div>
+  </div>
+
+  <div class="agenda-topo">
+    <div class="campo-f">
+      <label class="lbl">Executivo (closer)</label>
+      <select class="inp" id="ag-executivo"></select>
+    </div>
+  </div>
+  <div class="agenda-grid" id="agenda-grid"></div>
+
+  <div class="secao" style="margin:18px clamp(16px,3vw,32px) 0">Reuniões agendadas</div>
+  <div class="reunioes-lista" id="reunioes-lista"></div>
 </section>
 
 </div><!-- /#app -->
@@ -541,6 +639,41 @@
   </div>
 </div>
 
+<!-- ════════ MODAL MOTIVO DE RECUPERAÇÃO ════════ -->
+<div class="modal-bg" id="modal-motivo">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2>Motivo da recuperação</h2><p>Por que esse lead está voltando para retomada?</p></div>
+      <button class="dr-fechar" type="button" data-fechar-modal style="position:static">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="motivos-grid" id="motivos-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL AGENDAR REUNIÃO ════════ -->
+<div class="modal-bg" id="modal-agendar">
+  <div class="modal" style="width:min(620px,96vw)">
+    <div class="modal-head">
+      <div><h2>Agendar reunião</h2><p id="agd-sub">Escolha o executivo e o horário</p></div>
+      <button class="dr-fechar" type="button" data-fechar-modal style="position:static">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="agd-lead-id">
+      <div class="campo-f">
+        <label class="lbl">Executivo (closer)</label>
+        <select class="inp" id="agd-executivo"></select>
+      </div>
+      <div class="agenda-grid" id="agd-grid" style="padding:6px 0"></div>
+      <div class="modal-foot">
+        <button class="btn-cta" type="button" id="agd-confirmar" disabled>Confirmar reunião</button>
+        <button class="btn-sec" type="button" data-fechar-modal>Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
@@ -549,6 +682,10 @@ const SUPABASE_URL = "https://fpubzqjlkzjijwsjkxkn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_eyRduVtrq77xgsllucRiIw_p2Nd5hoE";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* credencial Google (preencha após criar o OAuth Client — ver LEIA-ME-setup.md §7) */
+const GOOGLE_CLIENT_ID = "608907772079-sfa86c4791ci9utkseghle66ve2kbjhu.apps.googleusercontent.com";
+const GOOGLE_REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-oauth-callback`;
 
 const COLUNAS = [
   {id:"novo",       nome:"Novo lead",     papel:"Entrada",   c:"var(--novo)",    cbg:"var(--novo-bg)",    cor:"#0066ff"},
@@ -559,14 +696,38 @@ const COLUNAS = [
 ];
 const nomeEtapa = id => (COLUNAS.find(c=>c.id===id)||{}).nome || id;
 
+const MOTIVOS_RECUPERACAO = [
+  {id:"nao_atendeu",  nome:"Cliente não atendeu",                         c:"#0066ff", bg:"#eaf1ff"},
+  {id:"no_show",      nome:"Atendeu mas não compareceu à reunião",        c:"#e53935", bg:"#fdeceb"},
+  {id:"retorno",      nome:"Pediu para retornar depois",                  c:"#ff8c00", bg:"#fff4e6"},
+  {id:"sem_resposta", nome:"Parou de responder / negociação travada",     c:"#7c3aed", bg:"#f3ecfe"},
+  {id:"sem_interesse",nome:"Sem interesse no momento",                    c:"#6b7280", bg:"#f3f4f6"},
+  {id:"outro",        nome:"Outro motivo",                                c:"#0d9488", bg:"#e6f7f5"},
+];
+const motivoInfo = id => MOTIVOS_RECUPERACAO.find(m=>m.id===id) || {nome:"Motivo não informado",c:"#6b7280",bg:"#f3f4f6"};
+// mapeia o resultado da ligação direto pro motivo de recuperação (quando aplicável)
+const RESULTADO_PARA_MOTIVO = {
+  "Não atendeu":"nao_atendeu",
+  "Não compareceu à reunião":"no_show",
+  "Pediu para retornar depois":"retorno",
+  "Parou de responder":"sem_resposta",
+  "Sem interesse":"sem_interesse",
+};
+const HORARIOS_AGENDA = [9,10,11,12,13,14,15,16,17]; // horário comercial fixo, slots de 1h
+
 let leads = [];
 let atividades = [];
+let reunioes = [];
+let executivos = [];     // perfis com papel "executivo"
+let integracaoPropria = null; // integracoes_executivo do usuário logado (se executivo)
 let perfil = null;       // { id, nome, papel }
 let usuario = null;      // auth user
 let filtro = "";
 let abaAtual = "kanban";
 let graficos = {};
 let alvoExclusao = null;
+let leadParaMotivo = null;     // id do lead aguardando escolha de motivo de recuperação
+let agendamento = { leadId:null, slot:null, executivoId:null }; // estado do modal de agendar reunião
 
 /* ─────────── helpers ─────────── */
 function prioridade(score){
@@ -686,17 +847,26 @@ document.getElementById("logout").addEventListener("click", async ()=>{
 /* ─────────── DADOS ─────────── */
 async function carregar(silencioso){
   try{
-    const [rl, ra] = await Promise.all([
+    const [rl, ra, rr, rp] = await Promise.all([
       sb.from("leads").select("*").order("score",{ascending:false}),
       sb.from("atividades").select("*").order("criado_em",{ascending:false}),
+      sb.from("reunioes").select("*").order("inicio",{ascending:true}),
+      sb.from("perfis").select("*").eq("papel","executivo"),
     ]);
     if(rl.error) throw rl.error;
     leads = rl.data || [];
     atividades = ra.error ? [] : (ra.data || []);
     if(ra.error) console.warn("Atividades indisponíveis:", ra.error.message);
+    reunioes = rr.error ? [] : (rr.data || []);
+    if(rr.error) console.warn("Reuniões indisponíveis:", rr.error.message);
+    executivos = rp.error ? [] : (rp.data || []);
+    if(perfil?.papel==="executivo"){
+      const { data } = await sb.from("integracoes_executivo").select("*").eq("usuario_id", usuario.id).maybeSingle();
+      integracaoPropria = data || null;
+    }
   }catch(e){
     console.error("Erro ao carregar dados:", e);
-    if(!silencioso){ toast("Erro ao carregar dados", true); leads=[]; atividades=[]; }
+    if(!silencioso){ toast("Erro ao carregar dados", true); leads=[]; atividades=[]; reunioes=[]; executivos=[]; }
     else return; // num refresh automático que falhou, mantém os dados atuais
   }
   renderTudo();
@@ -706,6 +876,8 @@ function renderTudo(){
   renderKanban();
   renderDashboard();
   renderLigacoes();
+  renderRecuperacao();
+  renderAgenda();
 }
 
 /* ─────────── KANBAN ─────────── */
@@ -749,7 +921,11 @@ function cardHTML(l){
     rodape=`<div class="ativo-tag"><svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5"/></svg>Cliente ativo</div>`;
     if(l.fechado_por_nome) rodape+=`<div class="fechado-por">Fechado por: <b>${esc(l.fechado_por_nome)}</b></div>`;
   }
-  if(l.status==="recuperacao") rodape=`<div class="meta">${esc(l.faturamento||"—")}</div><div class="recup-tag">↻ Em retomada</div>`;
+  if(l.status==="recuperacao"){
+    const m=motivoInfo(l.motivo_recuperacao);
+    rodape=`<div class="selo-motivo" style="--c:${m.c};--bg:${m.bg}"><span class="ponto"></span>${esc(m.nome)}</div>
+      <div class="recup-tempos">Em recuperação há ${tempoAtras(l.recuperacao_em)}</div>`;
+  }
   return `<div class="card" data-id="${l.id}">
     <div class="linha1">
       <span class="selo ${p.classe}">${p.rot}</span>
@@ -793,13 +969,15 @@ function abrir(id){
       <div class="campo-d"><span>Entrou em</span><b>${tempoAtras(l.criado_em)}</b></div>
       ${l.fechado_por_nome?`<div class="campo-d"><span>Fechado por</span><b style="color:var(--ativo)">${esc(l.fechado_por_nome)}</b></div>`:""}
       ${l.fechado_em?`<div class="campo-d"><span>Fechado em</span><b>${new Date(l.fechado_em).toLocaleDateString("pt-BR")}</b></div>`:""}
+      ${l.status==="recuperacao"?`<div class="campo-d"><span>Motivo</span><b style="color:${motivoInfo(l.motivo_recuperacao).c}">${esc(motivoInfo(l.motivo_recuperacao).nome)}</b></div>
+      <div class="campo-d"><span>Em recuperação há</span><b>${tempoAtras(l.recuperacao_em)}</b></div>`:""}
       <div class="secao">Mover para etapa</div>
       <div class="estagios">
-        ${COLUNAS.map(c=>`<button class="chip ${c.id===l.status?'atual':''}" style="--c:${c.cor};--cbg:${c.cbg}" onclick="mover(${l.id},'${c.id}')">${c.nome}</button>`).join("")}
+        ${COLUNAS.map(c=>`<button class="chip ${c.id===l.status?'atual':''}" style="--c:${c.cor};--cbg:${c.cbg}" onclick="${c.id==='recuperacao'?`abrirSeletorMotivo(${l.id})`:`mover(${l.id},'${c.id}')`}">${c.nome}</button>`).join("")}
       </div>
       <div class="dr-acoes">
         <button class="btn-sec" onclick="editarLead(${l.id})"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Editar</button>
-        <button class="btn-sec perigo" onclick="pedirExclusao(${l.id})"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg> Remover</button>
+        ${perfil.papel!=="sdr"?`<button class="btn-sec perigo" onclick="pedirExclusao(${l.id})"><svg viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m5 0V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/></svg> Remover</button>`:""}
       </div>
       <div class="secao">Linha do tempo</div>
       <div class="timeline dr-tl">${tlHTML}</div>
@@ -823,16 +1001,37 @@ function itemTimeline(a){
   </div>`;
 }
 
+/* ─────────── SELETOR DE MOTIVO DE RECUPERAÇÃO ─────────── */
+const modalMotivo=document.getElementById("modal-motivo");
+function abrirSeletorMotivo(id){
+  leadParaMotivo=id;
+  document.getElementById("motivos-grid").innerHTML = MOTIVOS_RECUPERACAO.map(m=>
+    `<button type="button" class="motivo-btn" style="--c:${m.c}" onclick="confirmarMotivo('${m.id}')">
+      <span class="ponto"></span>${esc(m.nome)}
+    </button>`).join("");
+  modalMotivo.classList.add("on");
+}
+function confirmarMotivo(motivoId){
+  fecharModais();
+  if(leadParaMotivo==null) return;
+  mover(leadParaMotivo,"recuperacao",motivoId);
+  leadParaMotivo=null;
+}
+
 /* ─────────── MOVER ETAPA (com registro de atividade) ─────────── */
-async function mover(id,novo){
+async function mover(id,novo,motivo){
   const l=leads.find(x=>x.id===id); if(!l) return;
-  if(l.status===novo){ fechar(); return; }
+  if(l.status===novo && novo!=="recuperacao"){ fechar(); return; }
   const antigo=l.status;
   const patch={ status:novo };
   if(novo==="ativo"){
     patch.fechado_por = usuario.id;
     patch.fechado_por_nome = perfil.nome;
     patch.fechado_em = new Date().toISOString();
+  }
+  if(novo==="recuperacao"){
+    patch.motivo_recuperacao = motivo || "outro";
+    patch.recuperacao_em = new Date().toISOString();
   }
   // atualização otimista: a UI responde na hora, a rede vai em segundo plano
   Object.assign(l, patch);
@@ -1092,10 +1291,30 @@ document.getElementById("form-ligacao").addEventListener("submit", async e=>{
   const resultado=document.getElementById("lig-resultado").value;
   const obs=document.getElementById("lig-obs").value.trim();
   await registrarAtividade({ lead_id:leadId, tipo:"ligacao", resultado, observacao:obs||null });
+
+  const motivo = RESULTADO_PARA_MOTIVO[resultado];
+  if(motivo){
+    const l=leads.find(x=>x.id===leadId);
+    if(l){
+      const etapaAnterior=l.status;
+      const patch={ status:"recuperacao", motivo_recuperacao:motivo, recuperacao_em:new Date().toISOString() };
+      Object.assign(l,patch);
+      try{
+        await sb.from("leads").update(patch).eq("id",leadId);
+        if(etapaAnterior!=="recuperacao") await registrarAtividade({ lead_id:leadId, tipo:"mudanca_etapa", etapa_anterior:etapaAnterior, etapa_nova:"recuperacao" });
+      }catch(err){ console.error("Erro ao mover pra recuperação:",err); }
+    }
+  }
+
   document.getElementById("lig-obs").value="";
-  renderLigacoes();
+  renderTudo();
   if(document.getElementById("hist-lead").value==String(leadId)) renderHistorico(leadId);
-  toast("Ligação registrada");
+
+  if(resultado==="Converteu em reunião"){
+    abrirModalAgendar(leadId);
+  } else {
+    toast("Ligação registrada");
+  }
 });
 
 document.getElementById("hist-lead").addEventListener("change", e=>renderHistorico(+e.target.value));
@@ -1106,6 +1325,206 @@ function renderHistorico(id){
   tl.innerHTML = itens.length ? itens.map(itemTimeline).join("")
     : `<div class="ativ-vazio">Nenhuma atividade para este lead.</div>`;
 }
+
+/* ─────────── RECUPERAÇÃO ─────────── */
+function renderRecuperacao(){
+  const lista = leads.filter(l=>l.status==="recuperacao")
+    .sort((a,b)=>new Date(b.recuperacao_em||0)-new Date(a.recuperacao_em||0));
+  document.getElementById("rec-total").textContent = lista.length;
+  const cont=document.getElementById("recup-lista");
+  cont.innerHTML = lista.length ? lista.map(l=>{
+    const m=motivoInfo(l.motivo_recuperacao);
+    return `<div class="recup-item" onclick="abrir(${l.id})">
+      <div>
+        <div class="ri-nome">${esc(l.nome)}</div>
+        <div class="ri-emp">${esc(l.empresa||"—")}</div>
+      </div>
+      <div class="selo-motivo" style="--c:${m.c};--bg:${m.bg}"><span class="ponto"></span>${esc(m.nome)}</div>
+      <div class="ri-tempos">
+        <div>Em recuperação há ${tempoAtras(l.recuperacao_em)}</div>
+        <div>No funil desde ${tempoAtras(l.criado_em)}</div>
+      </div>
+    </div>`;
+  }).join("") : `<div class="vazio">Nenhum lead em recuperação no momento.</div>`;
+}
+
+/* ─────────── AGENDA DO EXECUTIVO / RESERVA DE REUNIÃO ─────────── */
+function proximosDiasUteis(n){
+  const dias=[];
+  const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+1); // a partir de amanhã
+  while(dias.length<n){
+    if(d.getDay()!==0 && d.getDay()!==6) dias.push(new Date(d));
+    d.setDate(d.getDate()+1);
+  }
+  return dias;
+}
+function reuniaoNoSlot(executivoId, slotDate){
+  return reunioes.find(r=>r.executivo_id===executivoId && r.status==="agendada" && new Date(r.inicio).getTime()===slotDate.getTime());
+}
+function montarGradeSlots(containerEl, executivoId, onSelecionar, slotSelecionadoAtual){
+  if(!executivoId){ containerEl.innerHTML = `<div class="vazio">Selecione um executivo para ver a agenda.</div>`; return; }
+  const dias=proximosDiasUteis(10);
+  containerEl.innerHTML = dias.map(dia=>{
+    const tit=dia.toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
+    const slots=HORARIOS_AGENDA.map(h=>{
+      const slot=new Date(dia); slot.setHours(h,0,0,0);
+      const ocupado=reuniaoNoSlot(executivoId,slot);
+      const sel=slotSelecionadoAtual && slotSelecionadoAtual.getTime()===slot.getTime();
+      const lead=ocupado ? leads.find(x=>x.id===ocupado.lead_id) : null;
+      return `<button type="button" class="ag-slot ${ocupado?"ocupado":""} ${sel?"sel":""}"
+        ${ocupado?`title="Ocupado: ${esc(lead?.nome||"")}" disabled`:""}
+        data-slot="${slot.toISOString()}">${String(h).padStart(2,"0")}h</button>`;
+    }).join("");
+    return `<div class="ag-dia"><div class="ag-dia-tit">${tit}</div>${slots}</div>`;
+  }).join("");
+  containerEl.querySelectorAll(".ag-slot:not(.ocupado)").forEach(btn=>{
+    btn.addEventListener("click",()=>onSelecionar(new Date(btn.dataset.slot)));
+  });
+}
+function popularSelectExecutivos(selectEl){
+  const atual=selectEl.value;
+  const opcoes=executivos.map(e=>
+    `<option value="${e.id}" ${!e.google_conectado?"disabled":""}>${esc(e.nome)}${e.google_conectado?"":" (Google não conectado)"}</option>`
+  ).join("");
+  selectEl.innerHTML = `<option value="">Selecione…</option>` + opcoes;
+  if(atual) selectEl.value=atual;
+}
+
+function renderAgenda(){
+  const cfg=document.getElementById("config-exec");
+  if(perfil?.papel==="executivo"){
+    cfg.style.display="block";
+    document.getElementById("cfg-whatsapp").value = perfil.whatsapp || "";
+    document.getElementById("cfg-apikey").value = integracaoPropria?.callmebot_apikey || "";
+    document.getElementById("cfg-status-google").innerHTML = perfil.google_conectado
+      ? `<span class="conectado-tag">✔ Google Agenda conectado</span>`
+      : `<span class="desconectado-tag">✕ Google Agenda não conectado</span>`;
+  } else {
+    cfg.style.display="none";
+  }
+
+  popularSelectExecutivos(document.getElementById("ag-executivo"));
+  montarGradeSlots(document.getElementById("agenda-grid"), document.getElementById("ag-executivo").value, ()=>{});
+
+  const lista=[...reunioes].sort((a,b)=>new Date(b.inicio)-new Date(a.inicio));
+  const cont=document.getElementById("reunioes-lista");
+  cont.innerHTML = lista.length ? lista.map(r=>{
+    const lead=leads.find(l=>l.id===r.lead_id);
+    const dataFmt=new Date(r.inicio).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"});
+    const corStatus = r.status==="agendada"?"var(--novo)":r.status==="realizada"?"var(--ativo)":r.status==="no_show"?"var(--erro)":"var(--tinta-3)";
+    return `<div class="reuniao-card">
+      <div class="rc-info">
+        <b>${esc(lead?.nome||"Lead removido")}</b>
+        <div class="rc-meta">${esc(r.executivo_nome||"—")} · ${dataFmt} · <span style="color:${corStatus};font-weight:800">${esc(r.status)}</span></div>
+        ${r.meet_link?`<div class="rc-meta"><a href="${esc(r.meet_link)}" target="_blank" rel="noopener">${esc(r.meet_link)}</a></div>`:""}
+      </div>
+      ${r.status==="agendada"?`<div class="rc-acoes">
+        <button class="btn-mini ok" onclick="gerenciarReuniao(${r.id},'realizada')">Realizada</button>
+        <button class="btn-mini alerta" onclick="gerenciarReuniao(${r.id},'no_show')">Não compareceu</button>
+        <button class="btn-mini" onclick="gerenciarReuniao(${r.id},'cancelada')">Cancelar</button>
+      </div>`:""}
+    </div>`;
+  }).join("") : `<div class="vazio">Nenhuma reunião agendada ainda.</div>`;
+}
+document.getElementById("ag-executivo").addEventListener("change", e=>{
+  montarGradeSlots(document.getElementById("agenda-grid"), e.target.value, ()=>{});
+});
+
+async function gerenciarReuniao(id,acao){
+  try{
+    const { data, error } = await sb.functions.invoke("gerenciar-reuniao", { body:{ reuniao_id:id, acao } });
+    if(error) throw error;
+    if(data?.erro) throw new Error(data.erro);
+    toast("Reunião atualizada");
+    await carregar(true);
+  }catch(e){
+    console.error("Erro ao atualizar reunião:",e);
+    toast("Erro ao atualizar reunião", true);
+  }
+}
+
+document.getElementById("cfg-salvar").addEventListener("click", async ()=>{
+  const whatsapp=document.getElementById("cfg-whatsapp").value.trim();
+  const apikey=document.getElementById("cfg-apikey").value.trim();
+  try{
+    const [r1,r2]=await Promise.all([
+      sb.from("perfis").update({ whatsapp }).eq("id",usuario.id),
+      sb.from("integracoes_executivo").upsert({ usuario_id:usuario.id, callmebot_apikey:apikey, atualizado_em:new Date().toISOString() }),
+    ]);
+    if(r1.error) throw r1.error;
+    if(r2.error) throw r2.error;
+    perfil.whatsapp=whatsapp;
+    integracaoPropria={ ...(integracaoPropria||{}), callmebot_apikey:apikey };
+    toast("Configurações salvas");
+  }catch(e){
+    console.error("Erro ao salvar configurações:",e);
+    toast("Erro ao salvar configurações", true);
+  }
+});
+document.getElementById("cfg-conectar-google").addEventListener("click", ()=>{
+  const params=new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type:"code",
+    access_type:"offline",
+    prompt:"consent",
+    scope:"https://www.googleapis.com/auth/calendar.events",
+    state: usuario.id,
+  });
+  window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+});
+
+/* ─────────── MODAL AGENDAR REUNIÃO ─────────── */
+function abrirModalAgendar(leadId){
+  const l=leads.find(x=>x.id===leadId);
+  agendamento={ leadId, slot:null, executivoId:null };
+  document.getElementById("agd-lead-id").value=leadId;
+  document.getElementById("agd-sub").textContent = l ? `Lead: ${l.nome}` : "Escolha o executivo e o horário";
+  popularSelectExecutivos(document.getElementById("agd-executivo"));
+  document.getElementById("agd-confirmar").disabled=true;
+  renderGradeAgendar();
+  document.getElementById("modal-agendar").classList.add("on");
+}
+function renderGradeAgendar(){
+  const execId=document.getElementById("agd-executivo").value;
+  montarGradeSlots(document.getElementById("agd-grid"), execId, slot=>{
+    agendamento.slot=slot;
+    agendamento.executivoId=execId;
+    document.getElementById("agd-confirmar").disabled=false;
+    renderGradeAgendar();
+  }, agendamento.slot);
+}
+document.getElementById("agd-executivo").addEventListener("change", ()=>{
+  agendamento.slot=null;
+  document.getElementById("agd-confirmar").disabled=true;
+  renderGradeAgendar();
+});
+document.getElementById("agd-confirmar").addEventListener("click", async ()=>{
+  const btn=document.getElementById("agd-confirmar");
+  if(!agendamento.slot || !agendamento.executivoId){ toast("Escolha um horário", true); return; }
+  const exec=executivos.find(e=>e.id===agendamento.executivoId);
+  btn.disabled=true; const txt=btn.textContent; btn.textContent="Agendando…";
+  try{
+    const { data, error } = await sb.functions.invoke("criar-reuniao-meet", { body:{
+      lead_id: agendamento.leadId,
+      executivo_id: agendamento.executivoId,
+      executivo_nome: exec?.nome,
+      inicio: agendamento.slot.toISOString(),
+      agendado_por: usuario.id,
+      agendado_por_nome: perfil.nome,
+    }});
+    if(error) throw error;
+    if(data?.erro) throw new Error(data.erro);
+    toast("Reunião agendada! Meet: "+data.meet_link);
+    fecharModais();
+    await carregar(true);
+  }catch(e){
+    console.error("Erro ao agendar reunião:",e);
+    toast("Erro ao agendar: "+(e.message||""), true);
+  }finally{
+    btn.disabled=false; btn.textContent=txt;
+  }
+});
 
 /* ─────────── ABAS ─────────── */
 document.querySelectorAll(".aba").forEach(b=>b.addEventListener("click",()=>{
@@ -1135,10 +1554,22 @@ document.getElementById("ml-whatsapp").addEventListener("input",e=>{
   e.target.value=v;
 });
 
+/* ─────────── retorno do "Conectar Google" (Edge Function redireciona pra cá) ─────────── */
+function tratarRetornoGoogle(){
+  const params=new URLSearchParams(window.location.search);
+  const google=params.get("google");
+  if(!google) return;
+  if(google==="ok") toast("Google Agenda conectado com sucesso!");
+  else toast("Falha ao conectar o Google ("+(params.get("motivo")||"erro")+")", true);
+  params.delete("google"); params.delete("motivo");
+  const resto=params.toString();
+  window.history.replaceState({}, "", window.location.pathname+(resto?"?"+resto:""));
+}
+
 /* ─────────── sessão persistente ─────────── */
 (async ()=>{
   const { data } = await sb.auth.getSession();
-  if(data.session){ usuario=data.session.user; await entrarApp(); }
+  if(data.session){ usuario=data.session.user; await entrarApp(); tratarRetornoGoogle(); }
 })();
 </script>
 </body>

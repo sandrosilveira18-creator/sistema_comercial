@@ -20,14 +20,17 @@ gerencia num painel interno (Kanban). Voltado para lanchonetes/hamburguerias.
 | Arquivo | Papel |
 |---|---|
 | `index.html` | Formulário público multi-step. Calcula `score` e insere o lead via `fetch` REST como role `anon`. |
-| `comercial/index.html` | **Fonte única do painel interno.** Servido em `damiao.agr.br/comercial` (arquivo físico, sem depender de redirect). Login (Supabase Auth) + abas **Kanban**, **Dashboard** (Chart.js), **Ligações**. Usa `supabase-js`. Tem auto-refresh de 30s. Referencia `logo.jpg` relativo → existe `comercial/logo.jpg`. |
+| `comercial/index.html` | **Fonte única do painel interno.** Servido em `damiao.agr.br/comercial` (arquivo físico, sem depender de redirect). Login (Supabase Auth) + abas **Kanban**, **Dashboard** (Chart.js), **Ligações**, **Recuperação** e **Agenda**. Usa `supabase-js`. Tem auto-refresh de 30s. Referencia `logo.jpg` relativo → existe `comercial/logo.jpg`. |
 | `painel-comercial.html` | **Não é mais o painel** — virou um redirect (`meta refresh` + `location.replace`) para `/comercial/`, por compatibilidade com links antigos. **Não editar como se fosse o painel**; o painel é `comercial/index.html`. |
-| `supabase-setup.sql` | Schema (`leads`, `perfis`, `atividades`), índices, RLS, GRANTs e trigger de perfil automático. Idempotente. |
+| `supabase-setup.sql` | Schema (`leads`, `perfis`, `atividades`, `reunioes`, `integracoes_executivo`), índices, RLS, GRANTs e trigger de perfil automático. Idempotente. |
 | `logo.jpg` | Logo. **Deve ficar na mesma pasta** dos HTML (referenciado por `<img src="logo.jpg">`). |
 | `_redirects` | Netlify: `/comercial` e `/painel` → `painel-comercial.html` (status 200). |
-| `LEIA-ME-setup.md` | Guia de instalação para o cliente (SQL, criar usuário, testar, notificação WhatsApp). |
+| `LEIA-ME-setup.md` | Guia de instalação para o cliente (SQL, criar usuário, testar, notificação WhatsApp, agenda + Google Meet). |
 | `supabase/functions/notificar-lead/index.ts` | Edge Function chamada por um gatilho de banco (INSERT em `leads`). Envia notificação de texto via WhatsApp (API gratuita do **CallMeBot**) para o dono do negócio a cada lead novo. Segredos (`CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY`, `WEBHOOK_SECRET`) ficam só no Supabase (`supabase secrets set`), nunca no código. |
 | `supabase-webhook-whatsapp.sql` | Cria a extensão `pg_net` e o gatilho `AFTER INSERT ON leads` que chama a Edge Function `notificar-lead` via `net.http_post`. Precisa editar `<PROJECT_REF>` e `<WEBHOOK_SECRET>` antes de rodar. Roda no SQL Editor, depois do deploy da função. |
+| `supabase/functions/google-oauth-callback/index.ts` | Edge Function (`--no-verify-jwt`) que recebe o redirect do Google após o executivo autorizar o "Conectar Google Agenda", troca o `code` por tokens e grava em `integracoes_executivo` + `perfis.google_conectado`. |
+| `supabase/functions/criar-reuniao-meet/index.ts` | Edge Function (JWT normal) chamada pelo painel quando o SDR marca uma reunião: cria o evento com Google Meet na agenda do executivo, grava em `reunioes`/`atividades` e avisa o executivo por WhatsApp (CallMeBot). |
+| `supabase/functions/gerenciar-reuniao/index.ts` | Edge Function (JWT normal) que muda o status de uma reunião (`realizada`/`no_show`/`cancelada`); `no_show` move o lead pra `recuperacao`; `cancelada` também remove o evento no Google Agenda. |
 
 ## Credenciais Supabase
 
@@ -52,10 +55,14 @@ pública** (`anon` legada ou, no projeto atual, a **publishable key**) — nunca
 
 ## Banco de dados
 
-- Tabelas: `leads`, `perfis` (id = auth.users.id, `papel` ∈ sdr/executivo/admin), `atividades`.
+- Tabelas: `leads`, `perfis` (id = auth.users.id, `papel` ∈ sdr/executivo/admin),
+  `atividades`, `reunioes` (agenda do executivo), `integracoes_executivo`
+  (apikey do CallMeBot + tokens Google de cada executivo — nunca exposta a
+  outros usuários).
 - Para uma tabela funcionar pro app é preciso **GRANT** (privilégio de tabela) **e** **policy RLS**:
   - `anon`: apenas `INSERT`/`SELECT` em `leads`.
-  - `authenticated`: tudo em `leads`, `atividades`, `perfis` (perfis: edita só o próprio, lê todos).
+  - `authenticated`: leitura geral em `leads`/`atividades`/`reunioes`/`perfis`; `integracoes_executivo` só a própria linha.
+  - **DELETE em `leads` é restrito a `executivo`/`admin`** (função `public.meu_papel()`) — SDR não deleta nada, só cria/move/atualiza. Não existe DELETE em `reunioes`; cancelamento é `UPDATE status='cancelada'`.
   - `INSERT` com `BIGSERIAL` exige `GRANT USAGE, SELECT ON ... SEQUENCES`.
 - Erro `42501 permission denied for table` = falta GRANT (não é RLS). Erro
   `new row violates row-level security policy` = falta policy.
@@ -88,6 +95,14 @@ informativo — não entra no cálculo do score.
 
 - Status das colunas do Kanban: `novo`, `contato`, `negociacao`, `ativo`, `recuperacao`.
 - Ao mover para `ativo`, gravar `fechado_por`, `fechado_por_nome`, `fechado_em`.
+- Ao mover para `recuperacao`, gravar `motivo_recuperacao` (um de
+  `nao_atendeu`/`no_show`/`retorno`/`sem_resposta`/`sem_interesse`/`outro`,
+  ver `MOTIVOS_RECUPERACAO` no painel) e `recuperacao_em`. O motivo é sempre
+  escolhido pelo SDR — pelo resultado da ligação (mapeamento automático) ou
+  por um seletor manual ao mover o card no Kanban/drawer.
+- Agenda do executivo é **horário fixo** pra todo mundo: dias úteis, 9h–18h,
+  slots de 1h (constante `HORARIOS_AGENDA` no `<script>` do painel). Reunião
+  sempre dura 1h.
 - O painel **não tem realtime**: só busca dados no load; há botão ↻ para recarregar.
 - Criar usuário no Supabase Studio exige marcar **Auto Confirm User**.
 - Ao validar JS dos HTML, extrair os `<script>` e checar com `new Function(...)`.

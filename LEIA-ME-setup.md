@@ -88,7 +88,17 @@ só informativo e não entra no score.
 - **Dashboard** — KPIs, gráfico de linha (vendas/mês, 6 meses), gráfico de
   barras (fechamentos por executivo) e tabela Top 5 leads por score.
 - **Ligações** — registro de ligação por SDR (resultado), performance por SDR e
-  linha do tempo (histórico) por lead.
+  linha do tempo (histórico) por lead. Resultados negativos (Não atendeu, Não
+  compareceu à reunião, Pediu para retornar depois, Parou de responder, Sem
+  interesse) jogam o lead automaticamente para **Em recuperação** com o motivo
+  já marcado. "Converteu em reunião" abre o agendamento com o executivo.
+- **Recuperação** — lista os leads em retomada com selo colorido por motivo e
+  o tempo que cada um está no processo (ver seção 7).
+- **Agenda** — agenda fixa (seg-sex, 9h-18h) de cada executivo/closer; o SDR
+  marca o slot livre, o sistema cria a reunião com **Google Meet** automático
+  e avisa o executivo por WhatsApp (ver seção 7).
+- **Permissões** — SDR só cria/move/atualiza; remover lead é restrito a
+  `executivo`/`admin` (reforçado por RLS, não só na interface).
 
 ---
 
@@ -177,3 +187,73 @@ em **Edge Functions → notificar-lead → Logs** no Studio.
 > você mesmo**) — não serve para enviar mensagens a clientes. Se no futuro
 > quiser notificar a equipe inteira ou falar com os leads pelo WhatsApp, vale
 > migrar para um serviço como Z-API ou a API oficial da Meta.
+
+---
+
+## 7. Agenda do Closer + Google Meet automático
+
+Cada executivo (papel `executivo`) conecta a própria conta Google uma vez. A
+partir daí, quando o SDR marca uma reunião na aba **Agenda** (ou ao registrar
+"Converteu em reunião" na aba Ligações), o sistema cria o evento com **Google
+Meet** direto na agenda desse executivo e avisa ele por WhatsApp.
+
+### 7.1 Criar o projeto e a credencial OAuth no Google Cloud
+1. Acesse o [Google Cloud Console](https://console.cloud.google.com/) e crie
+   um projeto (ou use um existente).
+2. **APIs e serviços → Biblioteca** → procure **Google Calendar API** → **Ativar**.
+3. **APIs e serviços → Tela de consentimento OAuth**: tipo **Externo**, preencha
+   nome do app e e-mail de suporte. Não precisa publicar para uso interno
+   pequeno — pode deixar em "Teste" e adicionar os e-mails dos executivos como
+   **usuários de teste**.
+4. **APIs e serviços → Credenciais → Criar credenciais → ID do cliente OAuth**:
+   - Tipo de aplicativo: **Aplicativo da Web**.
+   - **URIs de redirecionamento autorizados**: adicione
+     `https://SEU-PROJECT-REF.supabase.co/functions/v1/google-oauth-callback`
+     (troque `SEU-PROJECT-REF` pelo da sua `SUPABASE_URL`).
+5. Anote o **Client ID** e o **Client Secret** gerados.
+
+### 7.2 Configurar os secrets e publicar as 3 Edge Functions
+```bash
+supabase secrets set GOOGLE_CLIENT_ID=SEU_CLIENT_ID.apps.googleusercontent.com
+supabase secrets set GOOGLE_CLIENT_SECRET=SEU_CLIENT_SECRET
+supabase secrets set GOOGLE_REDIRECT_URI=https://SEU-PROJECT-REF.supabase.co/functions/v1/google-oauth-callback
+supabase secrets set PAINEL_URL=https://damiao.agr.br/comercial/
+
+supabase functions deploy google-oauth-callback --no-verify-jwt
+supabase functions deploy criar-reuniao-meet
+supabase functions deploy gerenciar-reuniao
+```
+> `google-oauth-callback` precisa do `--no-verify-jwt` porque quem chama é o
+> redirect do navegador vindo do Google, sem o JWT do Supabase. As outras duas
+> são chamadas pelo painel já autenticado, então mantêm a verificação normal.
+
+### 7.3 Atualizar o `comercial/index.html`
+No topo do `<script>`, troque o `GOOGLE_CLIENT_ID` pelo Client ID gerado no
+passo 7.1 (o `GOOGLE_REDIRECT_URI` já é calculado automaticamente a partir da
+`SUPABASE_URL`):
+```js
+const GOOGLE_CLIENT_ID = "SEU_CLIENT_ID.apps.googleusercontent.com";
+```
+
+### 7.4 Cada executivo conecta a própria conta
+1. Cada executivo cadastra o **próprio WhatsApp** (com DDI) e a **apikey do
+   CallMeBot** (mesmo processo da seção 6.1, mas feito pelo próprio executivo)
+   na aba **Agenda → Minha conta**.
+2. Clica em **Conectar Google Agenda**, faz login com a conta Google que tem
+   a agenda dele, autoriza o acesso. Ele volta pro painel com a mensagem
+   "Google Agenda conectado com sucesso!".
+3. Sem isso, esse executivo aparece desabilitado (cinza) no seletor de
+   executivo do agendamento — o SDR não consegue marcar reunião com ele até
+   conectar.
+
+### 7.5 Testar
+1. Como SDR, na aba **Ligações**, registre uma ligação com resultado
+   "Converteu em reunião" — escolha o executivo já conectado e um horário
+   livre na grade.
+2. Confirme que aparece o link do Meet no painel, que o evento foi criado na
+   agenda Google do executivo, e que a mensagem chegou no WhatsApp dele.
+3. Na aba **Agenda**, marque essa reunião como **Não compareceu** e confira
+   que o lead vai para **Recuperação** com o selo vermelho.
+
+> A agenda é fixa pra todo mundo: dias úteis, 9h às 18h, slots de 1h (ver
+> `HORARIOS_AGENDA` no `<script>` se quiser ajustar o horário comercial).
