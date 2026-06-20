@@ -82,14 +82,25 @@ múltiplos) — está OK porque esse formulário manual nunca produz mais de um
 desafio. Se algum dia o `<select>` virar multi-escolha, essa função precisa
 ser ajustada para somar como o `index.html` faz.
 
-`origem` (Instagram, Indicação, Google, Facebook/Anúncio, Outro) é só
-informativo — não entra no cálculo do score.
+`origem` (Instagram, Indicação de alguém, Anúncio, Produtos Damião, ou texto
+livre quando "Outro" é escolhido) é só informativo — não entra no cálculo do
+score. `parceiro_damiao` (Sim/Não — "Você já é parceiro Damião?") também é só
+informativo.
 
 ## Deploy
 
 - Hospedado no **Netlify**; domínio **damiao.agr.br** (form na raiz, painel em `/comercial`).
-- Deploy por **drag-and-drop da pasta inteira** no site correto (o que tem o domínio).
-- Após editar HTML, lembrar que o deploy precisa ser refeito; testar em aba anônima (cache).
+- Deploy contínuo via **Git**: o site Netlify (`luxury-sable-9cce32`) está
+  conectado ao repositório do GitHub — basta `git push` na `main` que ele
+  publica sozinho. Drag-and-drop manual da pasta é só um fallback (evite
+  combinar os dois métodos no mesmo site, já consumiu créditos em dobro antes).
+- Netlify usa um pool de **créditos/mês** (plano atual: pago, antes era o
+  gratuito de 300/mês). Se aparecer aviso de "implantações desativadas",
+  checar **Billing → Usage** antes de mexer no código.
+- Após o deploy, testar em aba anônima (cache).
+- Edge Functions (`supabase/functions/*`) **não** sobem com o `git push` — precisam
+  de `supabase functions deploy <nome>` rodado manualmente sempre que o
+  `.ts` da função mudar.
 
 ## Convenções / gotchas
 

@@ -29,9 +29,12 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS fechado_por      UUID REFERENCES auth
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS fechado_por_nome TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS fechado_em       TIMESTAMPTZ;
 
--- origem do lead (Instagram, Indicação, Google etc.) — captada no formulário público
+-- origem do lead (Instagram, Indicação, Anúncio, Produtos Damião, ou texto livre quando "Outro") — captada no formulário público
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS origem TEXT;
 -- nota: "desafio" agora pode conter múltiplos valores separados por ", " (ex.: "Falta de venda, Falta de tempo")
+
+-- se o lead já é parceiro Damião (Sim/Não) — captado no formulário público
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS parceiro_damiao TEXT;
 
 -- motivo/tempo de quando o lead entra em "Em recuperação" (definido pelo SDR)
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS motivo_recuperacao TEXT
