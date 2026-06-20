@@ -752,6 +752,17 @@ function iniciais(nome){
   return ((p[0]||"")[0]||"" ).toUpperCase() + ((p[1]||"")[0]||"").toUpperCase();
 }
 function esc(s){ return String(s??"").replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+// supabase-js só dá "Edge Function returned a non-2xx status code" no .message;
+// o motivo real vem no corpo JSON da resposta (error.context), então extraímos daqui.
+async function mensagemErroFuncao(error){
+  try{
+    if(error?.context?.json){
+      const corpo=await error.context.json();
+      if(corpo?.erro) return corpo.erro;
+    }
+  }catch{}
+  return error?.message || "Erro desconhecido";
+}
 function calcularScore(d){
   let s=50;
   if(d.faturamento==="Acima de R$ 80 mil") s+=25;
@@ -1473,7 +1484,7 @@ async function gerenciarReuniao(id,acao){
     await carregar(true);
   }catch(e){
     console.error("Erro ao atualizar reunião:",e);
-    toast("Erro ao atualizar reunião", true);
+    toast("Erro ao atualizar: "+(await mensagemErroFuncao(e)), true);
   }
 }
 
@@ -1554,7 +1565,7 @@ document.getElementById("agd-confirmar").addEventListener("click", async ()=>{
     await carregar(true);
   }catch(e){
     console.error("Erro ao agendar reunião:",e);
-    toast("Erro ao agendar: "+(e.message||""), true);
+    toast("Erro ao agendar: "+(await mensagemErroFuncao(e)), true);
   }finally{
     btn.disabled=false; btn.textContent=txt;
   }
