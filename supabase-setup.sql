@@ -205,6 +205,7 @@ CREATE POLICY "usuario gerencia propria integracao"
 GRANT SELECT, INSERT, UPDATE ON reunioes TO authenticated;
 GRANT USAGE, SELECT ON SEQUENCE reunioes_id_seq TO authenticated;
 GRANT ALL ON reunioes TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE reunioes_id_seq TO service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON integracoes_executivo TO authenticated;
 GRANT ALL ON integracoes_executivo TO service_role;
