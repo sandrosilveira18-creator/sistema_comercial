@@ -53,6 +53,24 @@ pública** (`anon` legada ou, no projeto atual, a **publishable key**) — nunca
 > é a publishable key. Para ver as chaves do projeto: `supabase projects
 > api-keys --project-ref <ref>`.
 
+## Credenciais Google (Agenda/Meet)
+
+- `comercial/index.html` tem `GOOGLE_CLIENT_ID` fixo no `<script>` (não é
+  secreto, pode ficar no código) e `GOOGLE_REDIRECT_URI` é **calculado**
+  a partir da `SUPABASE_URL` (não precisa configurar à mão).
+- `GOOGLE_CLIENT_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_REDIRECT_URI` e
+  `PAINEL_URL` são **secrets do Supabase** (`supabase secrets set ...`),
+  usados pelas 3 Edge Functions de agenda/Meet — nunca no código do painel
+  (exceto o `CLIENT_ID`, que não é sensível).
+- A credencial OAuth no Google Cloud Console fica em modo **"Teste"**: cada
+  executivo precisa ter o e-mail dele adicionado manualmente em **Público-alvo
+  → Usuários de teste**, senão recebe `Erro 403: access_denied` ao clicar em
+  "Conectar Google Agenda". Voltar pra "Em produção" tira esse bloqueio mas
+  passa a mostrar o aviso "app não verificado" pro usuário.
+- **CallMeBot tem dois mecanismos diferentes nesse projeto, não confundir:**
+  - Notificação de **lead novo** → secrets globais `CALLMEBOT_PHONE`/`CALLMEBOT_APIKEY` (um número só, o do dono do negócio), usados por `notificar-lead`.
+  - Notificação de **reunião agendada** → `integracoes_executivo.callmebot_apikey` + `perfis.whatsapp`, um par por executivo (cada um ativa o próprio CallMeBot e cadastra na aba Agenda → Minha conta).
+
 ## Banco de dados
 
 - Tabelas: `leads`, `perfis` (id = auth.users.id, `papel` ∈ sdr/executivo/admin),
@@ -66,6 +84,35 @@ pública** (`anon` legada ou, no projeto atual, a **publishable key**) — nunca
   - `INSERT` com `BIGSERIAL` exige `GRANT USAGE, SELECT ON ... SEQUENCES`.
 - Erro `42501 permission denied for table` = falta GRANT (não é RLS). Erro
   `new row violates row-level security policy` = falta policy.
+- **GRANT de tabela e GRANT de sequência são independentes, e cada *role*
+  (`anon`/`authenticated`/`service_role`) precisa do seu próprio GRANT** —
+  dar `GRANT ALL ON tabela TO service_role` não cobre a sequência do
+  `BIGSERIAL`, e dar pra `authenticated` não cobre `service_role`. As Edge
+  Functions de agenda/Meet usam `service_role` pra gravar em `leads`,
+  `atividades`, `perfis`, `reunioes` e `integracoes_executivo` — todas essas
+  têm GRANT explícito pra `service_role` no `supabase-setup.sql` (incluindo
+  as sequências `leads_id_seq`, `atividades_id_seq`, `reunioes_id_seq`). Se
+  criar uma tabela nova com `BIGSERIAL` que alguma Edge Function vá escrever,
+  não esquecer o GRANT da sequência pro `service_role` também.
+
+## Edge Functions
+
+- `criar-reuniao-meet` e `gerenciar-reuniao` são chamadas **direto do navegador**
+  (`sb.functions.invoke(...)` no painel) — por isso precisam responder o
+  preflight `OPTIONS` e mandar `Access-Control-Allow-Origin`/`Allow-Headers`/
+  `Allow-Methods` em **toda** resposta (ver `corsHeaders` no topo de cada
+  arquivo). Esquecer isso dá `Failed to send a request to the Edge Function`
+  no painel, sem nenhum log do lado do Supabase (o navegador bloqueia antes).
+- `google-oauth-callback` (redirect de navegação, não fetch) e `notificar-lead`
+  (chamada server-to-server pelo gatilho `pg_net`) **não** precisam de CORS.
+- Quando uma Edge Function responde status não-2xx, o `supabase-js` só dá
+  `"Edge Function returned a non-2xx status code"` em `error.message` — o
+  motivo real fica no corpo JSON da resposta. O painel usa o helper
+  `mensagemErroFuncao(error)` (lê `error.context.json().erro`) pra mostrar a
+  causa certa no toast; reaproveitar esse helper em qualquer novo
+  `sb.functions.invoke(...)` em vez de usar `error.message` direto.
+- Depois de editar qualquer `.ts` em `supabase/functions/`, o deploy é manual:
+  `supabase functions deploy <nome>` (não sobe com `git push`, ver seção Deploy).
 
 ## Cálculo de score (mantém index.html e painel em sincronia)
 
@@ -102,6 +149,26 @@ informativo.
   de `supabase functions deploy <nome>` rodado manualmente sempre que o
   `.ts` da função mudar.
 
+## Aba Ligações (painel) — dois contextos
+
+A aba tem um toggle **Primeiro contato / Recuperação** (`ligContexto`,
+botões `.contexto-btn[data-contexto]` — classe própria, não reaproveitar
+`.aba`, que tem listener global de troca de tela e quebra se outro elemento
+usar essa classe). Cada contexto filtra a lista de leads e as opções de
+resultado (`RESULTADOS_POR_CONTEXTO`):
+
+- **Primeiro contato**: só leads `novo`/`contato`. Opções: Não atendeu,
+  Número errado, Converteu em reunião.
+- **Recuperação**: só leads `recuperacao`. Opções: Não atendeu, Converteu em
+  reunião, Não compareceu à reunião, Pediu para retornar depois, Parou de
+  responder, Sem interesse.
+
+`RESULTADO_PARA_MOTIVO` mapeia o resultado escolhido pro `motivo_recuperacao`
+(quando aplicável) e move o lead pra `recuperacao` automaticamente. "Converteu
+em reunião" abre o modal de agendamento em vez de só registrar a ligação; ao
+confirmar, a Edge Function `criar-reuniao-meet` move o lead pra `negociacao`
+vindo de **qualquer** etapa (exceto se já for `ativo`/`negociacao`).
+
 ## Convenções / gotchas
 
 - Status das colunas do Kanban: `novo`, `contato`, `negociacao`, `ativo`, `recuperacao`.
@@ -114,6 +181,15 @@ informativo.
 - Agenda do executivo é **horário fixo** pra todo mundo: dias úteis, 9h–18h,
   slots de 1h (constante `HORARIOS_AGENDA` no `<script>` do painel). Reunião
   sempre dura 1h.
+- **CSS do `comercial/index.html`**: a regra `body>*:not(.orbes){position:relative}`
+  existe pra dar `z-index` aos elementos de topo, mas tem especificidade maior
+  que uma classe sozinha (`.drawer{position:fixed}` etc.) e **sobrescreve**
+  `position:fixed` se o elemento for filho direto de `<body>`. Por isso o
+  seletor já exclui `:not(.drawer):not(.overlay):not(.toast):not(.modal-bg)`.
+  Qualquer elemento novo com `position:fixed` direto em `<body>` (overlay,
+  toast, modal, drawer) precisa entrar nessa lista de exclusão, senão ele
+  renderiza dentro do fluxo normal da página (aparece "lá embaixo" em vez de
+  sobreposto na tela).
 - O painel **não tem realtime**: só busca dados no load; há botão ↻ para recarregar.
 - Criar usuário no Supabase Studio exige marcar **Auto Confirm User**.
 - Ao validar JS dos HTML, extrair os `<script>` e checar com `new Function(...)`.
