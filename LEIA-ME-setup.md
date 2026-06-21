@@ -257,3 +257,57 @@ const GOOGLE_CLIENT_ID = "SEU_CLIENT_ID.apps.googleusercontent.com";
 
 > A agenda é fixa pra todo mundo: dias úteis, 9h às 18h, slots de 1h (ver
 > `HORARIOS_AGENDA` no `<script>` se quiser ajustar o horário comercial).
+
+---
+
+## 8. Link de pagamento (PagBank) ao fechar a venda
+
+Quando o lead vira **Cliente ativo**, o drawer dele ganha um botão **"Gerar
+link de pagamento"**. O executivo digita o valor, confirma, e o sistema cria
+um link do PagBank que aceita **Pix, boleto e cartão** ao mesmo tempo — o
+executivo só copia (ou usa o botão "Enviar no WhatsApp", que já abre o
+WhatsApp do lead com a mensagem pronta). Quando o cliente paga, um webhook
+do PagBank avisa o sistema automaticamente e o status muda pra **Pago**.
+
+### 8.1 Pegar o token da API (comece pelo sandbox!)
+1. Acesse o [Portal Dev do PagBank](https://portaldev.pagbank.com.br/), faça
+   login com a conta PagSeguro que você já usa.
+2. Na aba **Tokens**, copie o **token de sandbox** (ambiente de testes, não
+   movimenta dinheiro real).
+3. Quando já tiver testado tudo (seção 8.4), gere o **token de produção**:
+   no site normal do PagBank ([acesso.pagseguro.uol.com.br](https://acesso.pagseguro.uol.com.br)),
+   **Venda online → Integrações → Gerar Token**.
+
+### 8.2 Configurar os secrets
+```bash
+supabase secrets set PAGBANK_TOKEN=SEU_TOKEN_DE_SANDBOX
+supabase secrets set PAGBANK_API_URL=https://sandbox.api.pagseguro.com
+```
+Quando for pra produção, troque os dois valores (token de produção e
+`PAGBANK_API_URL=https://api.pagseguro.com`) e rode o `secrets set` de novo —
+não precisa redeployar as funções, elas leem o secret a cada chamada.
+
+### 8.3 Publicar as 2 funções
+```bash
+supabase functions deploy criar-link-pagamento
+supabase functions deploy pagbank-webhook --no-verify-jwt
+```
+> `pagbank-webhook` precisa do `--no-verify-jwt` porque quem chama é o
+> PagBank, sem o JWT do Supabase — a autenticidade da notificação é validada
+> por uma assinatura própria (SHA-256), não pelo JWT.
+
+### 8.4 Testar no sandbox
+1. No painel, abra um lead **Cliente ativo** → **Gerar link de pagamento** →
+   digite um valor → confirme.
+2. Abra o link gerado — deve cair na página de pagamento do PagBank (ambiente
+   de teste). O PagBank tem [cartões e dados de teste](https://developer.pagbank.com.br/)
+   pra simular um pagamento aprovado sem usar dinheiro real.
+3. Complete o pagamento de teste e confira no painel que o pagamento mudou
+   pra **Pago** (clique em ↻ pra atualizar) e que chegou aviso no WhatsApp
+   do executivo que gerou o link.
+4. Só depois disso, troque os secrets pro token de produção (passo 8.2).
+
+> Se o webhook não confirmar o pagamento, confira **Edge Functions →
+> pagbank-webhook → Logs** no Studio — o motivo mais comum é o
+> `PAGBANK_TOKEN` configurado errado (a assinatura da notificação é calculada
+> a partir dele, então um token errado faz toda notificação ser rejeitada).

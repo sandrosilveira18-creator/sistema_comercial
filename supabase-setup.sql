@@ -113,6 +113,27 @@ CREATE TABLE IF NOT EXISTS integracoes_executivo (
   atualizado_em        TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ───────────────────────────────────────────────
+-- 3d. Pagamentos (link de pagamento PagBank ao fechar a venda)
+-- ───────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS pagamentos (
+  id                  BIGSERIAL PRIMARY KEY,
+  lead_id             BIGINT REFERENCES leads(id) ON DELETE CASCADE,
+  criado_por          UUID REFERENCES auth.users(id),
+  criado_por_nome     TEXT,
+  valor_centavos      INT NOT NULL,
+  descricao           TEXT,
+  pagbank_checkout_id TEXT,
+  link_pagamento      TEXT,
+  status              TEXT NOT NULL DEFAULT 'pendente'
+                        CHECK (status IN ('pendente','pago','expirado','cancelado')),
+  pago_em             TIMESTAMPTZ,
+  criado_em           TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pagamentos_lead       ON pagamentos(lead_id);
+CREATE INDEX IF NOT EXISTS idx_pagamentos_checkout   ON pagamentos(pagbank_checkout_id);
+
 -- =====================================================================
 --  4. RLS (Row Level Security)
 -- =====================================================================
@@ -202,6 +223,22 @@ CREATE POLICY "usuario gerencia propria integracao"
   ON integracoes_executivo FOR ALL TO authenticated
   USING (auth.uid() = usuario_id) WITH CHECK (auth.uid() = usuario_id);
 
+-- ── PAGAMENTOS ───────────────────────────────────
+ALTER TABLE pagamentos ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "autenticados leem pagamentos"      ON pagamentos;
+DROP POLICY IF EXISTS "autenticados criam pagamentos"     ON pagamentos;
+DROP POLICY IF EXISTS "autenticados atualizam pagamentos" ON pagamentos;
+
+-- sem policy de DELETE de propósito: pagamento nunca é removido, só fica
+-- como histórico (pendente/pago/expirado/cancelado).
+CREATE POLICY "autenticados leem pagamentos"
+  ON pagamentos FOR SELECT TO authenticated USING (true);
+CREATE POLICY "autenticados criam pagamentos"
+  ON pagamentos FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "autenticados atualizam pagamentos"
+  ON pagamentos FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
 -- ── GRANTs das tabelas novas ──────────────────────
 -- RLS sozinho não basta: sem GRANT, qualquer acesso (até o do service_role
 -- nas Edge Functions) dá "42501 permission denied for table".
@@ -212,6 +249,11 @@ GRANT USAGE, SELECT ON SEQUENCE reunioes_id_seq TO service_role;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON integracoes_executivo TO authenticated;
 GRANT ALL ON integracoes_executivo TO service_role;
+
+GRANT SELECT, INSERT, UPDATE ON pagamentos TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE pagamentos_id_seq TO authenticated;
+GRANT ALL ON pagamentos TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE pagamentos_id_seq TO service_role;
 
 -- as Edge Functions (google-oauth-callback, criar-reuniao-meet, gerenciar-reuniao)
 -- usam a service_role key pra ler/gravar leads, atividades e perfis também —

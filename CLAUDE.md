@@ -22,15 +22,17 @@ gerencia num painel interno (Kanban). Voltado para lanchonetes/hamburguerias.
 | `index.html` | Formulário público multi-step. Calcula `score` e insere o lead via `fetch` REST como role `anon`. |
 | `comercial/index.html` | **Fonte única do painel interno.** Servido em `damiao.agr.br/comercial` (arquivo físico, sem depender de redirect). Login (Supabase Auth) + abas **Kanban**, **Dashboard** (Chart.js), **Ligações**, **Recuperação** e **Agenda**. Usa `supabase-js`. Tem auto-refresh de 30s. Referencia `logo.jpg` relativo → existe `comercial/logo.jpg`. |
 | `painel-comercial.html` | **Não é mais o painel** — virou um redirect (`meta refresh` + `location.replace`) para `/comercial/`, por compatibilidade com links antigos. **Não editar como se fosse o painel**; o painel é `comercial/index.html`. |
-| `supabase-setup.sql` | Schema (`leads`, `perfis`, `atividades`, `reunioes`, `integracoes_executivo`), índices, RLS, GRANTs e trigger de perfil automático. Idempotente. |
+| `supabase-setup.sql` | Schema (`leads`, `perfis`, `atividades`, `reunioes`, `integracoes_executivo`, `pagamentos`), índices, RLS, GRANTs e trigger de perfil automático. Idempotente. |
 | `logo.jpg` | Logo. **Deve ficar na mesma pasta** dos HTML (referenciado por `<img src="logo.jpg">`). |
 | `_redirects` | Netlify: `/comercial` e `/painel` → `painel-comercial.html` (status 200). |
-| `LEIA-ME-setup.md` | Guia de instalação para o cliente (SQL, criar usuário, testar, notificação WhatsApp, agenda + Google Meet). |
+| `LEIA-ME-setup.md` | Guia de instalação para o cliente (SQL, criar usuário, testar, notificação WhatsApp, agenda + Google Meet, link de pagamento PagBank). |
 | `supabase/functions/notificar-lead/index.ts` | Edge Function chamada por um gatilho de banco (INSERT em `leads`). Envia notificação de texto via WhatsApp (API gratuita do **CallMeBot**) para o dono do negócio a cada lead novo. Segredos (`CALLMEBOT_PHONE`, `CALLMEBOT_APIKEY`, `WEBHOOK_SECRET`) ficam só no Supabase (`supabase secrets set`), nunca no código. |
 | `supabase-webhook-whatsapp.sql` | Cria a extensão `pg_net` e o gatilho `AFTER INSERT ON leads` que chama a Edge Function `notificar-lead` via `net.http_post`. Precisa editar `<PROJECT_REF>` e `<WEBHOOK_SECRET>` antes de rodar. Roda no SQL Editor, depois do deploy da função. |
 | `supabase/functions/google-oauth-callback/index.ts` | Edge Function (`--no-verify-jwt`) que recebe o redirect do Google após o executivo autorizar o "Conectar Google Agenda", troca o `code` por tokens e grava em `integracoes_executivo` + `perfis.google_conectado`. |
 | `supabase/functions/criar-reuniao-meet/index.ts` | Edge Function (JWT normal) chamada pelo painel quando o SDR marca uma reunião: cria o evento com Google Meet na agenda do executivo, grava em `reunioes`/`atividades` e avisa o executivo por WhatsApp (CallMeBot). |
 | `supabase/functions/gerenciar-reuniao/index.ts` | Edge Function (JWT normal) que muda o status de uma reunião (`realizada`/`no_show`/`cancelada`); `no_show` move o lead pra `recuperacao`; `cancelada` também remove o evento no Google Agenda. |
+| `supabase/functions/criar-link-pagamento/index.ts` | Edge Function (JWT normal) chamada pelo painel quando o executivo gera um link de pagamento pra um lead `ativo`: cria um Checkout no PagBank (Pix+boleto+cartão) e grava em `pagamentos`/`atividades`. |
+| `supabase/functions/pagbank-webhook/index.ts` | Edge Function (`--no-verify-jwt`) que recebe a notificação de pagamento do PagBank, valida a assinatura (SHA-256) e marca `pagamentos.status='pago'` quando confirmado. |
 
 ## Credenciais Supabase
 
@@ -71,16 +73,37 @@ pública** (`anon` legada ou, no projeto atual, a **publishable key**) — nunca
   - Notificação de **lead novo** → secrets globais `CALLMEBOT_PHONE`/`CALLMEBOT_APIKEY` (um número só, o do dono do negócio), usados por `notificar-lead`.
   - Notificação de **reunião agendada** → `integracoes_executivo.callmebot_apikey` + `perfis.whatsapp`, um par por executivo (cada um ativa o próprio CallMeBot e cadastra na aba Agenda → Minha conta).
 
+## Pagamentos (PagBank)
+
+- Provedor: **PagBank/PagSeguro** — Checkout/Link de Pagamento
+  ([developer.pagbank.com.br](https://developer.pagbank.com.br/docs/checkout)),
+  `POST {PAGBANK_API_URL}/checkouts` (sandbox `https://sandbox.api.pagseguro.com`,
+  produção `https://api.pagseguro.com`), header `Authorization: Bearer
+  {PAGBANK_TOKEN}`. O link de pagamento vem em `links[].href` com `rel:"PAY"`
+  da resposta. `PAGBANK_TOKEN` e `PAGBANK_API_URL` são secrets do Supabase.
+- Fluxo: executivo digita o valor no drawer do lead `ativo` → Edge Function
+  `criar-link-pagamento` cria o checkout (Pix+boleto+cartão sempre listados
+  explicitamente, o default sem isso não é documentado) → grava em
+  `pagamentos` (status `pendente`) → executivo copia o link ou usa o botão
+  que já abre o WhatsApp do lead com a mensagem pronta.
+- Confirmação é via **webhook** (`notification_urls` no checkout →
+  `pagbank-webhook`), autenticado por um header `x-authenticity-token` =
+  SHA-256(`PAGBANK_TOKEN-corpo_bruto`) — validado **localmente** na função,
+  sem nenhuma chamada extra de confirmação ao PagBank. Token errado nos
+  secrets = toda notificação é rejeitada silenciosamente (ver Logs da função).
+- **Sempre testar no sandbox antes de ir pra produção** — trocar só os
+  secrets (`PAGBANK_TOKEN`/`PAGBANK_API_URL`), sem precisar redeployar nada.
+
 ## Banco de dados
 
 - Tabelas: `leads`, `perfis` (id = auth.users.id, `papel` ∈ sdr/executivo/admin),
   `atividades`, `reunioes` (agenda do executivo), `integracoes_executivo`
   (apikey do CallMeBot + tokens Google de cada executivo — nunca exposta a
-  outros usuários).
+  outros usuários), `pagamentos` (link de pagamento PagBank por lead).
 - Para uma tabela funcionar pro app é preciso **GRANT** (privilégio de tabela) **e** **policy RLS**:
   - `anon`: apenas `INSERT`/`SELECT` em `leads`.
-  - `authenticated`: leitura geral em `leads`/`atividades`/`reunioes`/`perfis`; `integracoes_executivo` só a própria linha.
-  - **DELETE em `leads` é restrito a `executivo`/`admin`** (função `public.meu_papel()`) — SDR não deleta nada, só cria/move/atualiza. Não existe DELETE em `reunioes`; cancelamento é `UPDATE status='cancelada'`.
+  - `authenticated`: leitura geral em `leads`/`atividades`/`reunioes`/`perfis`/`pagamentos`; `integracoes_executivo` só a própria linha.
+  - **DELETE em `leads` é restrito a `executivo`/`admin`** (função `public.meu_papel()`) — SDR não deleta nada, só cria/move/atualiza. Não existe DELETE em `reunioes`/`pagamentos`; cancelamento/expiração é sempre `UPDATE status=...`.
   - `INSERT` com `BIGSERIAL` exige `GRANT USAGE, SELECT ON ... SEQUENCES`.
 - Erro `42501 permission denied for table` = falta GRANT (não é RLS). Erro
   `new row violates row-level security policy` = falta policy.
@@ -88,12 +111,13 @@ pública** (`anon` legada ou, no projeto atual, a **publishable key**) — nunca
   (`anon`/`authenticated`/`service_role`) precisa do seu próprio GRANT** —
   dar `GRANT ALL ON tabela TO service_role` não cobre a sequência do
   `BIGSERIAL`, e dar pra `authenticated` não cobre `service_role`. As Edge
-  Functions de agenda/Meet usam `service_role` pra gravar em `leads`,
-  `atividades`, `perfis`, `reunioes` e `integracoes_executivo` — todas essas
-  têm GRANT explícito pra `service_role` no `supabase-setup.sql` (incluindo
-  as sequências `leads_id_seq`, `atividades_id_seq`, `reunioes_id_seq`). Se
-  criar uma tabela nova com `BIGSERIAL` que alguma Edge Function vá escrever,
-  não esquecer o GRANT da sequência pro `service_role` também.
+  Functions de agenda/Meet/pagamento usam `service_role` pra gravar em
+  `leads`, `atividades`, `perfis`, `reunioes`, `integracoes_executivo` e
+  `pagamentos` — todas essas têm GRANT explícito pra `service_role` no
+  `supabase-setup.sql` (incluindo as sequências `leads_id_seq`,
+  `atividades_id_seq`, `reunioes_id_seq`, `pagamentos_id_seq`). Se criar uma
+  tabela nova com `BIGSERIAL` que alguma Edge Function vá escrever, não
+  esquecer o GRANT da sequência pro `service_role` também.
 
 ## Edge Functions
 
