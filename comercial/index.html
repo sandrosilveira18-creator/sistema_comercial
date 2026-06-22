@@ -713,6 +713,22 @@
   </form>
 </div>
 
+<!-- ════════ MODAL DESFECHO DA REUNIÃO ════════ -->
+<div class="modal-bg" id="modal-pos-reuniao">
+  <div class="modal" style="width:min(420px,96vw)">
+    <div class="modal-head">
+      <div><h2>Reunião realizada</h2><p>O cliente fechou a venda?</p></div>
+      <button class="dr-fechar" type="button" data-fechar-modal style="position:static">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-foot" style="flex-direction:column">
+        <button class="btn-cta" type="button" id="pos-reuniao-fechou" style="width:100%">Sim, fechou — Cliente ativo</button>
+        <button class="btn-sec" type="button" id="pos-reuniao-nao-fechou" style="width:100%">Não fechou — Em recuperação</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
@@ -741,6 +757,7 @@ const MOTIVOS_RECUPERACAO = [
   {id:"retorno",      nome:"Pediu para retornar depois",                  c:"#ff8c00", bg:"#fff4e6"},
   {id:"sem_resposta", nome:"Parou de responder / negociação travada",     c:"#7c3aed", bg:"#f3ecfe"},
   {id:"sem_interesse",nome:"Sem interesse no momento",                    c:"#6b7280", bg:"#f3f4f6"},
+  {id:"cancelou",     nome:"Cancelou a reunião agendada",                 c:"#d6336c", bg:"#fdeef3"},
   {id:"outro",        nome:"Outro motivo",                                c:"#0d9488", bg:"#e6f7f5"},
 ];
 const motivoInfo = id => MOTIVOS_RECUPERACAO.find(m=>m.id===id) || {nome:"Motivo não informado",c:"#6b7280",bg:"#f3f4f6"};
@@ -1603,17 +1620,36 @@ document.getElementById("ag-executivo").addEventListener("change", e=>{
 });
 
 async function gerenciarReuniao(id,acao){
+  const leadId = reunioes.find(r=>r.id===id)?.lead_id;
   try{
     const { data, error } = await sb.functions.invoke("gerenciar-reuniao", { body:{ reuniao_id:id, acao } });
     if(error) throw error;
     if(data?.erro) throw new Error(data.erro);
     toast("Reunião atualizada");
     await carregar(true);
+    if(acao==="realizada" && leadId) abrirPosReuniao(leadId);
   }catch(e){
     console.error("Erro ao atualizar reunião:",e);
     toast("Erro ao atualizar: "+(await mensagemErroFuncao(e)), true);
   }
 }
+
+/* ─────────── DESFECHO DA REUNIÃO REALIZADA ─────────── */
+let leadPosReuniao = null;
+function abrirPosReuniao(leadId){
+  leadPosReuniao = leadId;
+  document.getElementById("modal-pos-reuniao").classList.add("on");
+}
+document.getElementById("pos-reuniao-fechou").addEventListener("click", ()=>{
+  fecharModais();
+  if(leadPosReuniao!=null) mover(leadPosReuniao,"ativo");
+  leadPosReuniao=null;
+});
+document.getElementById("pos-reuniao-nao-fechou").addEventListener("click", ()=>{
+  fecharModais();
+  if(leadPosReuniao!=null) abrirSeletorMotivo(leadPosReuniao);
+  leadPosReuniao=null;
+});
 
 document.getElementById("cfg-salvar").addEventListener("click", async ()=>{
   const whatsapp=document.getElementById("cfg-whatsapp").value.trim();

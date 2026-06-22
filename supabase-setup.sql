@@ -37,9 +37,13 @@ ALTER TABLE leads ADD COLUMN IF NOT EXISTS origem TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS parceiro_damiao TEXT;
 
 -- motivo/tempo de quando o lead entra em "Em recuperação" (definido pelo SDR)
-ALTER TABLE leads ADD COLUMN IF NOT EXISTS motivo_recuperacao TEXT
-  CHECK (motivo_recuperacao IN ('nao_atendeu','no_show','retorno','sem_resposta','sem_interesse','outro'));
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS motivo_recuperacao TEXT;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS recuperacao_em TIMESTAMPTZ;
+-- "cancelou" foi adicionado depois (reunião cancelada também joga pra recuperação) —
+-- por isso o constraint é recriado aqui em vez de ficar inline no ADD COLUMN.
+ALTER TABLE leads DROP CONSTRAINT IF EXISTS leads_motivo_recuperacao_check;
+ALTER TABLE leads ADD CONSTRAINT leads_motivo_recuperacao_check
+  CHECK (motivo_recuperacao IN ('nao_atendeu','no_show','retorno','sem_resposta','sem_interesse','cancelou','outro'));
 
 -- ───────────────────────────────────────────────
 -- 2. Perfis de usuário (nome + papel)

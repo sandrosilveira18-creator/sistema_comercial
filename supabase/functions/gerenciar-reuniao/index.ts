@@ -1,6 +1,9 @@
 // Edge Function chamada pelo painel para mudar o status de uma reunião já
-// agendada: marcar como realizada, não compareceu (no_show — joga o lead pra
-// recuperação vermelha) ou cancelada (também remove o evento no Google Agenda).
+// agendada: marcar como realizada, não compareceu (no_show) ou cancelada.
+// "no_show" e "cancelada" sempre jogam o lead pra recuperação (com motivos
+// diferentes); "cancelada" também remove o evento no Google Agenda.
+// "realizada" não move o lead aqui — o painel pergunta na hora se fechou
+// venda (ativo) ou não (recuperação, com seletor de motivo).
 // Mantém a verificação de JWT padrão (só usuário logado no painel pode chamar).
 // Não existe ação de exclusão real — SDR não deleta nada, isso é sempre UPDATE.
 
@@ -101,17 +104,20 @@ Deno.serve(async (req) => {
   const { error: erroUpdate } = await sbAdmin.from("reunioes").update({ status: acao }).eq("id", reuniao_id);
   if (erroUpdate) return json({ erro: "Falha ao atualizar reunião" }, 500);
 
-  if (acao === "no_show") {
+  if (acao === "no_show" || acao === "cancelada") {
+    const motivo = acao === "no_show" ? "no_show" : "cancelou";
+    const observacao =
+      acao === "no_show"
+        ? "Cliente não compareceu à reunião agendada — movido para recuperação."
+        : "Reunião cancelada — movido para recuperação.";
     await sbAdmin
       .from("leads")
-      .update({ status: "recuperacao", motivo_recuperacao: "no_show", recuperacao_em: new Date().toISOString() })
+      .update({ status: "recuperacao", motivo_recuperacao: motivo, recuperacao_em: new Date().toISOString() })
       .eq("id", reuniao.lead_id);
-    await sbAdmin.from("atividades").insert({
-      lead_id: reuniao.lead_id,
-      tipo: "nota",
-      observacao: "Cliente não compareceu à reunião agendada — movido para recuperação.",
-    });
+    await sbAdmin.from("atividades").insert({ lead_id: reuniao.lead_id, tipo: "nota", observacao });
   }
 
+  // "realizada" não decide nada aqui — o painel pergunta na hora se fechou
+  // venda (vira "ativo") ou não (abre o seletor de motivo de recuperação).
   return json({ ok: true });
 });

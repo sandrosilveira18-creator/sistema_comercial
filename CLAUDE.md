@@ -198,10 +198,19 @@ vindo de **qualquer** etapa (exceto se já for `ativo`/`negociacao`).
 - Status das colunas do Kanban: `novo`, `contato`, `negociacao`, `ativo`, `recuperacao`.
 - Ao mover para `ativo`, gravar `fechado_por`, `fechado_por_nome`, `fechado_em`.
 - Ao mover para `recuperacao`, gravar `motivo_recuperacao` (um de
-  `nao_atendeu`/`no_show`/`retorno`/`sem_resposta`/`sem_interesse`/`outro`,
+  `nao_atendeu`/`no_show`/`retorno`/`sem_resposta`/`sem_interesse`/`cancelou`/`outro`,
   ver `MOTIVOS_RECUPERACAO` no painel) e `recuperacao_em`. O motivo é sempre
-  escolhido pelo SDR — pelo resultado da ligação (mapeamento automático) ou
-  por um seletor manual ao mover o card no Kanban/drawer.
+  escolhido pelo SDR — pelo resultado da ligação (mapeamento automático), por
+  um seletor manual ao mover o card no Kanban/drawer, ou automaticamente pela
+  Edge Function `gerenciar-reuniao` (`no_show`/`cancelada`).
+- **Desfecho da reunião** (aba Agenda): um lead em `negociacao` só está lá
+  porque tem uma reunião marcada — é a única forma de chegar nessa etapa. As
+  3 ações da reunião (`realizada`/`no_show`/`cancelada`) sempre levam a um
+  destino: `no_show` e `cancelada` jogam o lead pra `recuperacao` direto (a
+  Edge Function decide o motivo, sem perguntar nada); `realizada` não move o
+  lead na Edge Function — o painel pergunta na hora ("Reunião realizada — o
+  cliente fechou?", modal `#modal-pos-reuniao`) e só então chama `mover(id,'ativo')`
+  ou `abrirSeletorMotivo(id)` (mesmo seletor usado no Kanban/drawer).
 - Agenda do executivo é **horário fixo** pra todo mundo: dias úteis, 9h–18h,
   slots de 1h (constante `HORARIOS_AGENDA` no `<script>` do painel). Reunião
   sempre dura 1h.
